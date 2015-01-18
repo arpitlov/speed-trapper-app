@@ -1,0 +1,59 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Car @ViewBag.CarName</title>
+    <script src="~/Scripts/jquery-1.6.4.min.js"></script>
+    <script src="~/Scripts/jquery.signalR-2.2.0.min.js"></script>
+
+    <script src="http://localhost/SpeedTraper/signalr/hubs"></script>
+    <script type="text/javascript">
+        $(function () {
+            var isBusted = false;
+            var hub = $.connection.speedTrapperHub;
+            var carSpeed = generateCarSpeed();
+
+            var sessionId = "@Session.SessionID";
+            var carName = "@ViewBag.CarName";
+            $('#speed').text(carSpeed + ' km/hr')
+
+            hub.client.Busted = function (speedLimit) {
+                isBusted = true;
+                $('#speed-limit').text(speedLimit + ' km/hr')
+                $('#busted-container').show();
+            }
+
+            $.connection.hub.start().done(function () {
+                hub.server.registerCar(carName, sessionId, carSpeed);
+                setTimeout(function () { driveCar() }, 5000);
+            });
+
+            function driveCar() {
+
+                if (!isBusted) {
+                    carSpeed = generateCarSpeed();
+                    $('#speed').text(carSpeed + ' km/hr')
+                    hub.server.speedTrap(carName, sessionId, carSpeed);
+                    setTimeout(function () { driveCar() }, 10000);
+                }
+            }
+            function generateCarSpeed() {
+                return Math.floor((Math.random() * 200) + 1)
+            }
+
+        });
+    </script>
+</head>
+<body>
+    <div>
+        <div>My name is <strong>@ViewBag.CarName</strong></div>
+        <div id="speed-container"><span id="speed"></span>(current speed)</div>
+        <div id="busted-container" style="display: none;">You are Busted. Speed limit: <span id="speed-limit"></span></div>
+    </div>
+</body>
+</html>

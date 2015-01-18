@@ -1,0 +1,99 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Speed trapper</title>
+    <script src="~/Scripts/jquery-1.6.4.min.js"></script>
+    <script src="~/Scripts/jquery.signalR-2.2.0.min.js"></script>
+
+    <script src="~/signalr/hubs"></script>
+    <script type="text/javascript">
+        $(function () {
+            var hub = $.connection.speedTrapperHub;
+            $.connection.hub.start().done(function () {
+                hub.server.registerTrapper();
+                hub.server.getRegisteredCars();
+            });
+
+            hub.client.ShowCars=function (cars) {
+                
+                jQuery.each(cars, function (name, value) {
+                    addCarToTable(value);
+                });
+            }
+
+            hub.client.CarAdded = function (car) {
+                addCarToTable(car);
+            }
+
+            hub.client.UpdateCar = function (car) {
+                updateCarInTable(car);
+            }
+
+            hub.client.RemoveCar = function (connectionId) {
+                $('#' + connectionId).remove();
+            }
+
+            hub.client.UpdateSpeedLimit=function(speedLimit) {
+                $('#txt_overspeed').val(speedLimit);
+            }
+
+            function addCarToTable(car) {
+                var htmlToAdd = ''
+                
+                if (car.IsBusted == true) {
+                    htmlToAdd = '<tr id="'+car.ConnectionId+'"><td>' + car.Name + '</td><td class="speed">' + car.Speed + '</td><td class="status">Busted.</td></tr>'
+                }
+                else {
+                    htmlToAdd = '<tr id="' + car.ConnectionId + '"><td>' + car.Name + '</td><td class="speed">' + car.Speed + '</td><td class="status">Running.</td></tr>'
+                }
+                $('#car-holder tbody').append(htmlToAdd);
+            }
+
+            function updateCarInTable(car) {
+                
+                $('#' + car.ConnectionId + ' .speed').text(car.Speed);
+                
+                if (car.IsBusted == true) {
+                    
+                    $('#' + car.ConnectionId + ' .status').text('Busted.');
+                }
+                else {
+                    $('#' + car.ConnectionId + ' .status').text('Running.');
+                }
+            }
+
+            $('#btn_overspeed').click(function () {
+                var overSpeed = $('#txt_overspeed').val();
+                if (overSpeed > 0 && overSpeed <= 200) {
+                    hub.server.setSpeedLimit(overSpeed);
+                }
+                else {
+                    alert('Overspeed should be between 0 and 200');
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <div>
+        <div>
+<span style="padding-right:10px;">Speed Trap</span>
+<span>Overspeed: <input type="text" maxlength="3" id="txt_overspeed" /><input type="button"  title="Apply" data-role="set-overspeed" value="Apply" id="btn_overspeed" /> </span>
+
+        </div>
+<table border="1" id="car-holder">
+<tr>
+<th>Car Name</th>
+<th>Car Speed</th>
+<th>Car Status</th>
+</tr>
+
+</table>
+</body>
+</html>
